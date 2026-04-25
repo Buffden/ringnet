@@ -1,0 +1,18 @@
+# Credentials
+.env
+
+# Maven
+target/
+*.class
+*.jar
+
+# Data (generated, not source)
+data/raw/*.csv
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
