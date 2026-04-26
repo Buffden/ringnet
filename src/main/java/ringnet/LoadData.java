@@ -21,6 +21,24 @@ public class LoadData {
                 session.run("CREATE CONSTRAINT device_id IF NOT EXISTS FOR (d:Device) REQUIRE d.device_id IS UNIQUE");
                 session.run("CREATE CONSTRAINT transaction_id IF NOT EXISTS FOR (t:Transaction) REQUIRE t.id IS UNIQUE");
             });
+
+            step("Loading accounts", () ->
+                session.run("""
+                    LOAD CSV WITH HEADERS FROM 'file:///accounts.csv' AS row
+                    MERGE (a:Account {id: row.id})
+                    SET a.name           = row.name,
+                        a.created_at     = row.created_at,
+                        a.fraud_confirmed = (row.fraud_confirmed = 'true')
+                    """).consume());
+
+            step("Loading phones → HAS_PHONE", () ->
+                session.run("""
+                    LOAD CSV WITH HEADERS FROM 'file:///phones.csv' AS row
+                    MATCH (a:Account {id: row.account_id})
+                    MERGE (p:Phone {number: row.number})
+                    MERGE (a)-[r:HAS_PHONE]->(p)
+                    SET r.created_at = row.created_at
+                    """).consume());
         }
     }
 
