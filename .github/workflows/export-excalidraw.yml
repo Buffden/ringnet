@@ -1,4 +1,4 @@
-name: Export Excalidraw Diagrams
+name: Export Excalidraw Diagrams Workflow
 
 on:
   # Runs on any PR (any target branch) that touches .excalidraw files → validate only
