@@ -49,13 +49,13 @@ public class LoadData {
                     SET r.created_at = row.created_at
                     """).consume());
 
-            step("Loading devices → USED_DEVICE", () ->
+            step("Loading devices → HAS_DEVICE", () ->
                 session.run("""
                     LOAD CSV WITH HEADERS FROM 'file:///devices.csv' AS row
                     MATCH (a:Account {id: row.account_id})
                     MERGE (d:Device {device_id: row.device_id})
                     SET d.device_type = row.device_type
-                    MERGE (a)-[r:USED_DEVICE]->(d)
+                    MERGE (a)-[r:HAS_DEVICE]->(d)
                     SET r.last_seen = row.last_seen
                     """).consume());
 
@@ -72,7 +72,7 @@ public class LoadData {
                     CREATE (a)-[:HAS_ADDRESS]->(addr)
                     """).consume());
 
-            step("Loading transactions → SENT", () ->
+            step("Loading transactions", () ->
                 session.run("""
                     LOAD CSV WITH HEADERS FROM 'file:///transactions.csv' AS row
                     MATCH (from:Account {id: row.from_account_id})
@@ -83,7 +83,13 @@ public class LoadData {
                         t.status    = row.status
                     MERGE (from)-[:SENT]->(t)
                     MERGE (t)-[:TO]->(to)
+                    MERGE (from)-[r:TRANSFERRED_TO]->(to)
+                    SET r.amount         = toFloat(row.amount),
+                        r.timestamp      = row.timestamp,
+                        r.transaction_id = row.id
                     """).consume());
+
+            System.out.println("\nLoad complete. Run VerifyLoad to confirm counts.");
         }
     }
 
