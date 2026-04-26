@@ -102,8 +102,8 @@
     {
       "id": "r-phone",
       "type": "rectangle",
-      "x": 268.1916155460002,
-      "y": 173.98071379286318,
+      "x": 252.58211286539665,
+      "y": 168.63197506632167,
       "width": 140,
       "height": 60,
       "angle": 0,
@@ -118,8 +118,8 @@
       "roundness": {
         "type": 3
       },
-      "version": 296,
-      "versionNonce": 1047156652,
+      "version": 316,
+      "versionNonce": 775510804,
       "isDeleted": false,
       "boundElements": [
         {
@@ -131,7 +131,7 @@
           "type": "arrow"
         }
       ],
-      "updated": 1777232733103,
+      "updated": 1777233159308,
       "link": null,
       "locked": false,
       "index": "a2",
@@ -141,8 +141,8 @@
     {
       "id": "tK8e1ZSzoDAJxWdtlNYhI",
       "type": "text",
-      "x": 308.9116320254924,
-      "y": 191.48071379286318,
+      "x": 293.30212934488884,
+      "y": 186.13197506632167,
       "width": 58.559967041015625,
       "height": 25,
       "angle": 0,
@@ -158,11 +158,11 @@
       "index": "a2V",
       "roundness": null,
       "seed": 441032108,
-      "version": 241,
-      "versionNonce": 488276524,
+      "version": 261,
+      "versionNonce": 1308940436,
       "isDeleted": false,
       "boundElements": null,
-      "updated": 1777232733103,
+      "updated": 1777233159308,
       "link": null,
       "locked": false,
       "text": "Phone",
@@ -488,8 +488,8 @@
       "type": "arrow",
       "x": 487.1570798845653,
       "y": 275,
-      "width": 73.9654676519732,
-      "height": 71.105629562079,
+      "width": 89.57497033257675,
+      "height": 76.45436828862051,
       "angle": 0,
       "strokeColor": "#1e1e1e",
       "backgroundColor": "transparent",
@@ -500,8 +500,8 @@
       "opacity": 100,
       "groupIds": [],
       "roundness": null,
-      "version": 399,
-      "versionNonce": 1663391532,
+      "version": 419,
+      "versionNonce": 847554068,
       "isDeleted": false,
       "boundElements": [
         {
@@ -509,7 +509,7 @@
           "id": "OiDIVgxeLVtlBSnB8D_7R"
         }
       ],
-      "updated": 1777232745939,
+      "updated": 1777233159308,
       "link": null,
       "locked": false,
       "points": [
@@ -519,11 +519,11 @@
         ],
         [
           0,
-          -71.105629562079
+          -76.45436828862051
         ],
         [
-          -73.9654676519732,
-          -71.105629562079
+          -89.57497033257675,
+          -76.45436828862051
         ]
       ],
       "lastCommittedPoint": null,

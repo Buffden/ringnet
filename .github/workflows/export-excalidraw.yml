@@ -1,4 +1,4 @@
-name: Export Excalidraw Diagrams
+name: Export Excalidraw Diagrams Workflow
 
 on:
   # Runs on any PR (any target branch) that touches .excalidraw files → validate only
@@ -55,6 +55,7 @@ jobs:
             npx excalidraw-brute-export-cli \
               -i "$file" \
               -f svg \
+              -s 1 \
               -o "$out"
           done
 
