@@ -9,6 +9,7 @@ import java.time.*;
 import java.time.format.*;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.stream.*;
 
 public class GenerateData {
 
@@ -28,12 +29,14 @@ public class GenerateData {
         List<Address> addresses = new ArrayList<>();
 
         List<String> legitIds = generateLegitAccounts(accounts, phones, emails, devices, addresses);
+        List<List<String>> rings = generateFraudRings(accounts, phones, emails, devices, addresses);
 
         System.out.printf("Accounts: %d%n", accounts.size());
         System.out.printf("Phones:   %d%n", phones.size());
         System.out.printf("Emails:   %d%n", emails.size());
         System.out.printf("Devices:  %d%n", devices.size());
         System.out.printf("Addresses:%d%n", addresses.size());
+        System.out.printf("Rings:    %d%n", rings.size());
     }
 
     static List<String> generateLegitAccounts(
@@ -80,6 +83,95 @@ public class GenerateData {
                     FAKER.address().city(),
                     FAKER.address().zipCode(),
                     randomAddressType()));
+    }
+
+    // --- Fraud ring generation ---
+
+    static List<List<String>> generateFraudRings(
+            List<Account> accounts,
+            List<Phone> phones,
+            List<Email> emails,
+            List<Device> devices,
+            List<Address> addresses) {
+
+        int[] ringSizes = Arrays.stream(CONFIG.getProperty("ring.sizes").split(","))
+                .mapToInt(Integer::parseInt).toArray();
+
+        List<List<String>> rings = new ArrayList<>();
+        int[] idCounter = {1};
+
+        for (int ringIdx = 0; ringIdx < ringSizes.length; ringIdx++) {
+            List<String> ringIds = createRingMembers(accounts, ringSizes[ringIdx], idCounter);
+            assignSharedIdentifiers(phones, emails, devices, addresses, ringIds, ringIdx);
+            rings.add(ringIds);
+        }
+        return rings;
+    }
+
+    static List<String> createRingMembers(List<Account> accounts, int size, int[] idCounter) {
+        List<String> ringIds = new ArrayList<>();
+        for (int j = 0; j < size; j++) {
+            String id = String.format("FRAUD-%04d", idCounter[0]++);
+            accounts.add(new Account(id, FAKER.name().fullName(), randomTs(2023, 2024), true));
+            ringIds.add(id);
+        }
+        return ringIds;
+    }
+
+    static void assignSharedIdentifiers(
+            List<Phone> phones,
+            List<Email> emails,
+            List<Device> devices,
+            List<Address> addresses,
+            List<String> ringIds,
+            int ringIdx) {
+
+        int numPhones  = Integer.parseInt(CONFIG.getProperty("ring.shared.phones.base")) + ringIdx;
+        int numEmails  = Integer.parseInt(CONFIG.getProperty("ring.shared.emails.base")) + ringIdx;
+        int numDevices = Integer.parseInt(CONFIG.getProperty("ring.shared.devices.base")) + ringIdx;
+
+        List<String> phonePool  = generatePhonePool(numPhones);
+        List<String> emailPool  = generateEmailPool(numEmails);
+        List<String[]> devicePool = generateDevicePool(numDevices, ringIdx);
+
+        for (String memberId : ringIds) {
+            String joinedAt = randomTs(2023, 2024);
+            pickFromPool(phonePool, numPhones).forEach(n -> phones.add(new Phone(memberId, n, joinedAt)));
+            pickFromPool(emailPool, numEmails).forEach(a -> emails.add(new Email(memberId, a, joinedAt)));
+            String[] dev = devicePool.get(RNG.nextInt(devicePool.size()));
+            devices.add(new Device(memberId, dev[0], dev[1], joinedAt));
+            addresses.add(new Address(memberId,
+                    FAKER.address().streetAddress(),
+                    FAKER.address().city(),
+                    FAKER.address().zipCode(),
+                    "billing"));
+        }
+    }
+
+    static List<String> generatePhonePool(int count) {
+        List<String> pool = new ArrayList<>();
+        for (int i = 0; i < count; i++) pool.add(FAKER.phoneNumber().cellPhone());
+        return pool;
+    }
+
+    static List<String> generateEmailPool(int count) {
+        List<String> pool = new ArrayList<>();
+        for (int i = 0; i < count; i++) pool.add(FAKER.internet().emailAddress());
+        return pool;
+    }
+
+    static List<String[]> generateDevicePool(int count, int ringIdx) {
+        List<String[]> pool = new ArrayList<>();
+        for (int d = 0; d < count; d++)
+            pool.add(new String[]{String.format("DEV-RING%d-%02d", ringIdx + 1, d + 1), randomDeviceType()});
+        return pool;
+    }
+
+    static List<String> pickFromPool(List<String> pool, int poolSize) {
+        List<String> shuffled = new ArrayList<>(pool);
+        Collections.shuffle(shuffled, RNG);
+        int count = 1 + RNG.nextInt(Math.min(2, poolSize));
+        return shuffled.subList(0, count);
     }
 
     static Properties loadConfig() {
