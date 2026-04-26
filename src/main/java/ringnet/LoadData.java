@@ -39,6 +39,51 @@ public class LoadData {
                     MERGE (a)-[r:HAS_PHONE]->(p)
                     SET r.created_at = row.created_at
                     """).consume());
+
+            step("Loading emails → HAS_EMAIL", () ->
+                session.run("""
+                    LOAD CSV WITH HEADERS FROM 'file:///emails.csv' AS row
+                    MATCH (a:Account {id: row.account_id})
+                    MERGE (e:Email {address: row.address})
+                    MERGE (a)-[r:HAS_EMAIL]->(e)
+                    SET r.created_at = row.created_at
+                    """).consume());
+
+            step("Loading devices → USED_DEVICE", () ->
+                session.run("""
+                    LOAD CSV WITH HEADERS FROM 'file:///devices.csv' AS row
+                    MATCH (a:Account {id: row.account_id})
+                    MERGE (d:Device {device_id: row.device_id})
+                    SET d.device_type = row.device_type
+                    MERGE (a)-[r:USED_DEVICE]->(d)
+                    SET r.last_seen = row.last_seen
+                    """).consume());
+
+            step("Loading addresses → HAS_ADDRESS", () ->
+                session.run("""
+                    LOAD CSV WITH HEADERS FROM 'file:///addresses.csv' AS row
+                    MATCH (a:Account {id: row.account_id})
+                    CREATE (addr:Address {
+                        street: row.street,
+                        city:   row.city,
+                        zip:    row.zip,
+                        type:   row.type
+                    })
+                    CREATE (a)-[:HAS_ADDRESS]->(addr)
+                    """).consume());
+
+            step("Loading transactions → SENT", () ->
+                session.run("""
+                    LOAD CSV WITH HEADERS FROM 'file:///transactions.csv' AS row
+                    MATCH (from:Account {id: row.from_account_id})
+                    MATCH (to:Account   {id: row.to_account_id})
+                    MERGE (t:Transaction {id: row.id})
+                    SET t.amount    = toFloat(row.amount),
+                        t.timestamp = row.timestamp,
+                        t.status    = row.status
+                    MERGE (from)-[:SENT]->(t)
+                    MERGE (t)-[:TO]->(to)
+                    """).consume());
         }
     }
 
