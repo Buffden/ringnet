@@ -4,6 +4,7 @@ import com.github.javafaker.Faker;
 import ringnet.model.*;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.time.*;
 import java.time.format.*;
@@ -31,6 +32,8 @@ public class GenerateData {
         List<String> legitIds = generateLegitAccounts(accounts, phones, emails, devices, addresses);
         List<List<String>> rings = generateFraudRings(accounts, phones, emails, devices, addresses);
         List<Transaction> transactions = generateTransactions(legitIds, rings);
+
+        writeCsvs(dataDir, accounts, phones, emails, devices, addresses, transactions);
 
         System.out.printf("Accounts: %d%n", accounts.size());
         System.out.printf("Phones: %d%n", phones.size());
@@ -147,6 +150,64 @@ public class GenerateData {
         for (List<String> ring : rings)
             for (int t = 0; t < ring.size() * multiplier; t++)
                 transactions.add(tx(++txId[0], pick(legitIds), pick(ring), amtMin, amtMax, "completed"));
+    }
+
+    // --- CSV writing ---
+
+    static void writeCsvs(
+            Path dir,
+            List<Account> accounts,
+            List<Phone> phones,
+            List<Email> emails,
+            List<Device> devices,
+            List<Address> addresses,
+            List<Transaction> transactions) throws IOException {
+
+        writeCsv(dir.resolve("accounts.csv"),
+                "id,name,created_at,fraud_confirmed",
+                accounts.stream().map(a -> csv(a.id(), a.name(), a.createdAt(), String.valueOf(a.fraudConfirmed()))));
+
+        writeCsv(dir.resolve("phones.csv"),
+                "account_id,number,created_at",
+                phones.stream().map(p -> csv(p.accountId(), p.number(), p.createdAt())));
+
+        writeCsv(dir.resolve("emails.csv"),
+                "account_id,address,created_at",
+                emails.stream().map(e -> csv(e.accountId(), e.address(), e.createdAt())));
+
+        writeCsv(dir.resolve("devices.csv"),
+                "account_id,device_id,device_type,last_seen",
+                devices.stream().map(d -> csv(d.accountId(), d.deviceId(), d.deviceType(), d.lastSeen())));
+
+        writeCsv(dir.resolve("addresses.csv"),
+                "account_id,street,city,zip,type",
+                addresses.stream().map(a -> csv(a.accountId(), a.street(), a.city(), a.zip(), a.type())));
+
+        writeCsv(dir.resolve("transactions.csv"),
+                "id,from_account_id,to_account_id,amount,timestamp,status",
+                transactions.stream().map(t -> csv(t.id(), t.fromAccountId(), t.toAccountId(),
+                        t.amount(), t.timestamp(), t.status())));
+    }
+
+    static void writeCsv(Path path, String header, Stream<String> rows) throws IOException {
+        try (PrintWriter pw = new PrintWriter(
+                new BufferedWriter(new OutputStreamWriter(
+                        Files.newOutputStream(path), StandardCharsets.UTF_8)))) {
+            pw.println(header);
+            rows.forEach(pw::println);
+        }
+        System.out.println("Written: " + path);
+    }
+
+    static String csv(String... values) {
+        return Arrays.stream(values)
+                .map(v -> {
+                    if (v == null) return "";
+                    if (v.contains(",") || v.contains("\"") || v.contains("\n"))
+                        return "\"" + v.replace("\"", "\"\"") + "\"";
+                    return v;
+                })
+                .collect(Collectors.joining(","));
     }
 
     static Transaction tx(int id, String from, String to, double amtMin, double amtMax, String status) {
