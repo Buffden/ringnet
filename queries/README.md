@@ -13,6 +13,7 @@ Open the Neo4j browser at [localhost:7474](http://localhost:7474) and paste each
 | 1 | [Basic Traversal](#1-basic-traversal) | [basic_traversal.cypher](basic_traversal.cypher) |
 | 2 | [Shared Identifiers](#2-shared-identifiers) | [shared_identifiers.cypher](shared_identifiers.cypher) |
 | 3 | [Ring Detection](#3-ring-detection) | [ring_detection.cypher](ring_detection.cypher) |
+| 4 | [Velocity Checks](#4-velocity-checks) | [velocity_checks.cypher](velocity_checks.cypher) |
 
 ---
 
@@ -82,3 +83,26 @@ This query traverses the graph outward from a known fraud account through any id
 - What happens if the graph has cycles and you use no upper bound?
 - Why use `DISTINCT` in the return?
 - What does it mean if a non-fraud account shows up in the results?
+
+---
+
+## 4. Velocity Checks
+
+**File:** `velocity_checks.cypher`
+
+### Goal
+
+Find accounts that sent an unusually high number of transactions in a short time window.
+
+### Why this matters
+
+Shared identifiers reveal structural connections between accounts. But a fraudster operating a single account leaves no shared identifier signal — only behavioral signal. High transaction frequency in a short window is a classic indicator of money mule activity or account takeover.
+
+This query looks at behavior, not structure. It complements the previous queries by catching fraud that has no ring — just volume.
+
+### Things to think about
+
+- How do you aggregate transactions per account before filtering?
+- What threshold makes sense for flagging high velocity?
+- What does the time window between first and last transaction tell you?
+- What does it mean if a `fraud_confirmed: true` account does NOT appear in these results?
