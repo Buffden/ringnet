@@ -49,16 +49,12 @@ jobs:
             -not -path "./node_modules/*" \
           | while IFS= read -r file; do
             rel="${file#./}"
-            out="diagrams/${rel%.excalidraw}.svg"
+            out="${rel%.excalidraw}.svg"
             mkdir -p "$(dirname "$out")"
             echo "Exporting: $rel → $out"
             npx excalidraw-brute-export-cli \
               -i "$file" \
-              -format svg \
-              --scale 1 \
-              --background 1 \
-              --embed-scene 0 \
-              --dark-mode 0 \
+              -f svg \
               -o "$out"
           done
 
