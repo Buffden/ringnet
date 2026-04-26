@@ -50,9 +50,9 @@ Neo4j's query language is **Cypher**. It is designed so the query visually resem
 
 ## Detection Techniques
 
-Think of a shared phone number as a secret connection between two accounts. The fraudster reused the same phone number across multiple fake accounts — probably out of laziness. That reuse is the mistake we exploit.
+Think of a shared phone number as a secret connection between two accounts. The fraudster reused the same phone number across multiple fake accounts — probably out of laziness. That reuse is the mistake to exploit.
 
-If we store the phone number as a text field on each account, it stays invisible — just a string sitting in a column. But if we pull it out and make it its own node in the graph, something changes: both accounts now have an edge pointing to that same phone node. The connection becomes physical. You can follow it. That is the difference between a property and a node — one is data you can read, the other is a connection you can traverse. The same logic applies to email and device.
+If the phone number is stored as a text field on each account, it stays invisible — just a string sitting in a column. But pulling it out and making it its own node in the graph changes something: both accounts now have an edge pointing to that same phone node. The connection becomes physical. You can follow it. That is the difference between a property and a node — one is data you can read, the other is a connection you can traverse. The same logic applies to email and device.
 
 **Transaction velocity** is about how fast an account moves money. Twenty transactions in one hour, or $50,000 transferred out within a day of account creation — these are behavioral red flags. This is a **local signal**: it tells you something is off about one specific account, in isolation.
 
