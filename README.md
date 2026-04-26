@@ -44,6 +44,8 @@ Understanding the schema before writing any code is essential. Every design deci
 | `TRANSFERRED_TO` | Account → Account | `amount`, `timestamp`, `transaction_id` | Direct money transfer |
 | `FLAGGED_BY` | Account → Account | `rule`, `confidence` | Fraud rule linked these accounts |
 
+![Data model diagram](diagrams/data_model.svg)
+
 ### Why These Modeling Decisions
 
 **Shared identifiers are nodes, not properties.** A phone number could be a property on an Account (`account.phone = "+1-555-0101"`). But if it's a property, you cannot traverse it — you can only filter by it. Making Phone a node means two accounts sharing a phone number are literally connected in the graph. The connection *is* the fraud signal.
