@@ -1,5 +1,7 @@
 # RingNet
 
+![Fraud ring graph visualization](assets/images/graph.png)
+
 Graph-based fraud ring detection using Neo4j. Models financial entities as a property graph to detect connected fraud networks through shared identifiers, behavioral patterns, and multi-hop traversal — a use case where graph databases outperform relational at scale.
 
 ---
@@ -256,6 +258,24 @@ This project covers three distinct areas of system design knowledge:
 - **Design defense** — how to argue graph over relational when pushed back on cost, operational complexity, or team familiarity
 
 The documents in `system_design/` are structured as interview artifacts — ADR, schema rationale, and SQL vs Cypher comparison — not just notes.
+
+---
+
+## Graph Visualization
+
+The image below is the output of running the ring detection query in the Neo4j browser with graph view enabled.
+
+```cypher
+MATCH path = (start:Account {fraud_confirmed: true})-[:HAS_PHONE|HAS_EMAIL|HAS_DEVICE*1..6]-(connected:Account)
+WHERE start <> connected
+RETURN path
+```
+
+This query starts from every confirmed fraud account and traverses outward through shared identifiers — phone, email, and device — up to 6 hops deep. Returning `path` instead of individual properties tells the browser to render the full traversal, including the intermediate Phone, Email, and Device nodes that connect accounts.
+
+Each cluster in the graph is a fraud ring. The intermediate nodes between accounts show *how* the accounts are connected — a shared phone node between two account nodes means both accounts registered the same phone number. The three distinct clusters correspond to the three rings planted by `GenerateData.java` with sizes 5, 8, and 12.
+
+![Fraud ring graph visualization](assets/images/graph.png)
 
 ---
 
