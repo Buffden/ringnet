@@ -30,13 +30,15 @@ public class GenerateData {
 
         List<String> legitIds = generateLegitAccounts(accounts, phones, emails, devices, addresses);
         List<List<String>> rings = generateFraudRings(accounts, phones, emails, devices, addresses);
+        List<Transaction> transactions = generateTransactions(legitIds, rings);
 
         System.out.printf("Accounts: %d%n", accounts.size());
-        System.out.printf("Phones:   %d%n", phones.size());
-        System.out.printf("Emails:   %d%n", emails.size());
-        System.out.printf("Devices:  %d%n", devices.size());
-        System.out.printf("Addresses:%d%n", addresses.size());
-        System.out.printf("Rings:    %d%n", rings.size());
+        System.out.printf("Phones: %d%n", phones.size());
+        System.out.printf("Emails: %d%n", emails.size());
+        System.out.printf("Devices: %d%n", devices.size());
+        System.out.printf("Addresses: %d%n", addresses.size());
+        System.out.printf("Rings: %d%n", rings.size());
+        System.out.printf("Transactions: %d%n", transactions.size());
     }
 
     static List<String> generateLegitAccounts(
@@ -83,6 +85,81 @@ public class GenerateData {
                     FAKER.address().city(),
                     FAKER.address().zipCode(),
                     randomAddressType()));
+    }
+
+    // --- Transaction generation ---
+
+    static List<Transaction> generateTransactions(List<String> legitIds, List<List<String>> rings) {
+        List<Transaction> transactions = new ArrayList<>();
+        int[] txId = {0};
+        addLegitTransactions(transactions, legitIds, txId);
+        addIntraRingTransactions(transactions, rings, txId);
+        addRingToLegitTransactions(transactions, rings, legitIds, txId);
+        addLegitToRingTransactions(transactions, rings, legitIds, txId);
+        return transactions;
+    }
+
+    static void addLegitTransactions(List<Transaction> transactions, List<String> legitIds, int[] txId) {
+        int count = Integer.parseInt(CONFIG.getProperty("tx.legit.count"));
+        double failProb = Double.parseDouble(CONFIG.getProperty("tx.legit.failed.probability"));
+        double amtMin = Double.parseDouble(CONFIG.getProperty("tx.legit.amount.min"));
+        double amtMax = Double.parseDouble(CONFIG.getProperty("tx.legit.amount.max"));
+
+        for (int t = 0; t < count; t++) {
+            String from = pick(legitIds);
+            String to;
+            do { to = pick(legitIds); } while (to.equals(from));
+            String status = RNG.nextDouble() < failProb ? "failed" : "completed";
+            transactions.add(tx(++txId[0], from, to, amtMin, amtMax, status));
+        }
+    }
+
+    static void addIntraRingTransactions(List<Transaction> transactions, List<List<String>> rings, int[] txId) {
+        int multiplier = Integer.parseInt(CONFIG.getProperty("tx.intra.multiplier"));
+        double amtMin = Double.parseDouble(CONFIG.getProperty("tx.intra.amount.min"));
+        double amtMax = Double.parseDouble(CONFIG.getProperty("tx.intra.amount.max"));
+
+        for (List<String> ring : rings) {
+            for (int t = 0; t < ring.size() * multiplier; t++) {
+                String from = pick(ring);
+                String to;
+                do { to = pick(ring); } while (to.equals(from));
+                transactions.add(tx(++txId[0], from, to, amtMin, amtMax, "completed"));
+            }
+        }
+    }
+
+    static void addRingToLegitTransactions(List<Transaction> transactions, List<List<String>> rings, List<String> legitIds, int[] txId) {
+        int multiplier = Integer.parseInt(CONFIG.getProperty("tx.ring.to.legit.multiplier"));
+        double amtMin = Double.parseDouble(CONFIG.getProperty("tx.ring.to.legit.amount.min"));
+        double amtMax = Double.parseDouble(CONFIG.getProperty("tx.ring.to.legit.amount.max"));
+
+        for (List<String> ring : rings)
+            for (int t = 0; t < ring.size() * multiplier; t++)
+                transactions.add(tx(++txId[0], pick(ring), pick(legitIds), amtMin, amtMax, "completed"));
+    }
+
+    static void addLegitToRingTransactions(List<Transaction> transactions, List<List<String>> rings, List<String> legitIds, int[] txId) {
+        int multiplier = Integer.parseInt(CONFIG.getProperty("tx.legit.to.ring.multiplier"));
+        double amtMin = Double.parseDouble(CONFIG.getProperty("tx.legit.to.ring.amount.min"));
+        double amtMax = Double.parseDouble(CONFIG.getProperty("tx.legit.to.ring.amount.max"));
+
+        for (List<String> ring : rings)
+            for (int t = 0; t < ring.size() * multiplier; t++)
+                transactions.add(tx(++txId[0], pick(legitIds), pick(ring), amtMin, amtMax, "completed"));
+    }
+
+    static Transaction tx(int id, String from, String to, double amtMin, double amtMax, String status) {
+        double amount = amtMin + RNG.nextDouble() * (amtMax - amtMin);
+        return new Transaction(
+                String.format("TX-%05d", id), from, to,
+                String.format("%.2f", amount),
+                randomTs(2023, 2024),
+                status);
+    }
+
+    static String pick(List<String> list) {
+        return list.get(RNG.nextInt(list.size()));
     }
 
     // --- Fraud ring generation ---
