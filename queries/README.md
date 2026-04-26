@@ -14,6 +14,7 @@ Open the Neo4j browser at [localhost:7474](http://localhost:7474) and paste each
 | 2 | [Shared Identifiers](#2-shared-identifiers) | [shared_identifiers.cypher](shared_identifiers.cypher) |
 | 3 | [Ring Detection](#3-ring-detection) | [ring_detection.cypher](ring_detection.cypher) |
 | 4 | [Velocity Checks](#4-velocity-checks) | [velocity_checks.cypher](velocity_checks.cypher) |
+| 5 | [Risk Scoring](#5-risk-scoring) | [risk_scoring.cypher](risk_scoring.cypher) |
 
 ---
 
@@ -106,3 +107,26 @@ This query looks at behavior, not structure. It complements the previous queries
 - What threshold makes sense for flagging high velocity?
 - What does the time window between first and last transaction tell you?
 - What does it mean if a `fraud_confirmed: true` account does NOT appear in these results?
+
+---
+
+## 5. Risk Scoring
+
+**File:** `risk_scoring.cypher`
+
+### Goal
+
+Assign a composite risk score to every account by combining all fraud signals into a single number.
+
+### Why this matters
+
+Each previous query detects one signal in isolation. In practice, no single signal is reliable enough on its own — a high transaction count could be a legitimate business, and sharing a phone could be a family member. Combining signals into a score reduces false positives and surfaces the accounts that are suspicious across multiple dimensions at once.
+
+The score weights ring proximity the highest, since being reachable from a confirmed fraud account is the strongest signal. Shared identifiers contribute moderately, and transaction velocity contributes least on its own.
+
+### Things to think about
+
+- Why use `OPTIONAL MATCH` instead of `MATCH` here?
+- Why is ring proximity weighted higher than the other signals?
+- What does a high score on a `fraud_confirmed: false` account mean?
+- How would you tune the weights for a different fraud environment?
