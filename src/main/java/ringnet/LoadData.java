@@ -89,6 +89,20 @@ public class LoadData {
                         r.transaction_id = row.id
                     """).consume());
 
+            step("Computing FLAGGED_BY from shared identifiers", () ->
+                session.run("""
+                    MATCH (a:Account)-[:HAS_PHONE|HAS_EMAIL|HAS_DEVICE]->(shared) <-[:HAS_PHONE|HAS_EMAIL|HAS_DEVICE]-(b:Account)
+                    WHERE a.id < b.id
+                    WITH a, b, count(DISTINCT shared) AS shared_count
+                    MERGE (a)-[r:FLAGGED_BY]->(b)
+                    SET r.rule       = 'shared_identifier',
+                        r.confidence = CASE
+                            WHEN shared_count >= 3 THEN 0.9
+                            WHEN shared_count = 2  THEN 0.6
+                            ELSE 0.3
+                        END
+                    """).consume());
+
             System.out.println("\nLoad complete. Run VerifyLoad to confirm counts.");
         }
     }
