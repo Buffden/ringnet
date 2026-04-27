@@ -14,9 +14,10 @@ public class VerifyLoad {
         String password = dotenv.get("NEO4J_PASSWORD");
 
         try (Driver driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
-             Session session = driver.session()) {
+        Session session = driver.session()) {
 
             printNodeCounts(session);
+            printRelationshipCounts(session);
             List<List<String>> rings = detectFraudRings(session);
             printRingSummary(rings);
         }
@@ -29,6 +30,16 @@ public class VerifyLoad {
             long count = session.run("MATCH (n:" + label + ") RETURN count(n) AS c")
                     .single().get("c").asLong();
             System.out.printf("  %-15s %d%n", label + ":", count);
+        }
+    }
+
+    static void printRelationshipCounts(Session session) {
+        System.out.println("\n--- Relationship counts ---");
+        String[] types = {"HAS_PHONE", "HAS_EMAIL", "HAS_DEVICE", "HAS_ADDRESS", "SENT", "TO", "TRANSFERRED_TO", "FLAGGED_BY"};
+        for (String type : types) {
+            long count = session.run("MATCH ()-[r:" + type + "]->() RETURN count(r) AS c")
+                    .single().get("c").asLong();
+            System.out.printf("  %-20s %d%n", type + ":", count);
         }
     }
 
