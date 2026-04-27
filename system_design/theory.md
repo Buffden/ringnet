@@ -58,7 +58,7 @@ If the phone number is stored as a text field on each account, it stays invisibl
 
 Ring membership is a **structural signal**: it tells you an account is connected to a network of other suspicious accounts, regardless of its own transaction history. An account could have very few transactions but still be deeply embedded in a fraud ring.
 
-The risk score in `05_risk_scoring.cypher` combines both signals into one number per account — how close it is to a confirmed fraud node, how many shared identifiers it has with flagged accounts, how fast it moves money, and whether it belongs to a ring. That combined score is what you hand to an analyst. Instead of reviewing thousands of accounts blindly, they start from the top of the list.
+The risk score in `risk_scoring.cypher` combines both signals into one number per account — how close it is to a confirmed fraud node, how many shared identifiers it has with flagged accounts, how fast it moves money, and whether it belongs to a ring. That combined score is what you hand to an analyst. Instead of reviewing thousands of accounts blindly, they start from the top of the list.
 
 ---
 
