@@ -4,7 +4,7 @@
 [![GitHub](https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/buffden)
 [![LinkedIn](https://img.shields.io/badge/LinkedIn-0A66C2?style=for-the-badge&logo=linkedin&logoColor=white)](https://www.linkedin.com/in/harshwardhanpatil23)
 
-![Fraud ring graph visualization](assets/images/graph.png)
+![Fraud ring graph visualization](assets/images/graph.svg)
 
 Graph-based fraud ring detection using Neo4j. Models financial entities as a property graph to detect connected fraud networks through shared identifiers, behavioral patterns, and multi-hop traversal — a use case where graph databases outperform relational at scale.
 
@@ -309,17 +309,105 @@ The documents in `system_design/` are structured as interview artifacts — ADR,
 
 ## Graph Visualization
 
-The image below is the output of running the ring detection query in the Neo4j browser with graph view enabled.
+Run `queries/ring_detection.cypher` in the Neo4j browser to produce the visualization. The query returns full paths including the intermediate Phone, Email, and Device nodes that connect accounts:
 
 ```cypher
-MATCH path = (start:Account {fraud_confirmed: true})-[:HAS_PHONE|HAS_EMAIL|HAS_DEVICE*1..6]-(connected:Account)
-WHERE start <> connected
-RETURN path
+MATCH (a:Account {fraud_confirmed: true})-[r:HAS_PHONE|HAS_EMAIL|HAS_DEVICE]->(identifier)
+RETURN a, r, identifier
 ```
 
-This query starts from every confirmed fraud account and traverses outward through shared identifiers — phone, email, and device — up to 6 hops deep. Returning `path` instead of individual properties tells the browser to render the full traversal, including the intermediate Phone, Email, and Device nodes that connect accounts.
+This returns each fraud account and its direct connections to shared identifier nodes. The browser naturally reveals the ring structure — any Phone, Email, or Device node with multiple Account edges pointing to it is a shared identifier, and the accounts sharing it form a ring. The three distinct clusters correspond to the three rings planted by `GenerateData.java` with sizes 5, 8, and 12.
 
-Each cluster in the graph is a fraud ring. The intermediate nodes between accounts show *how* the accounts are connected — a shared phone node between two account nodes means both accounts registered the same phone number. The three distinct clusters correspond to the three rings planted by `GenerateData.java` with sizes 5, 8, and 12.
+> The image above should be replaced by running the query after loading data. Open the Neo4j browser, run `ring_detection.cypher`, switch to graph view, and screenshot the result.
+
+---
+
+## Observations
+
+Results from running the full pipeline: `GenerateData` → `LoadData` → `VerifyLoad` → all five Cypher queries.
+
+### Data Generation (`GenerateData.java`)
+
+```
+Accounts: 150   Phones: 115   Emails: 120   Devices: 96   Addresses: 132   Transactions: 450   Rings: 3
+```
+
+150 accounts total: 125 legitimate + 25 fraud across 3 planted rings (sizes 5, 8, 12).
+
+### Load Verification (`VerifyLoad.java`)
+
+```
+--- Node counts ---
+  Account:        150
+  Phone:          336
+  Email:          360
+  Device:         289
+  Address:        528
+  Transaction:    450
+
+--- Relationship counts ---
+  HAS_PHONE:           460
+  HAS_EMAIL:           480
+  HAS_DEVICE:          309
+  HAS_ADDRESS:         528
+  SENT:                450
+  TO:                  450
+  TRANSFERRED_TO:      402
+  FLAGGED_BY:          100
+
+--- Fraud ring summary ---
+Fraud rings detected: 3
+Largest ring size:    12
+
+--- Ring breakdown ---
+  Ring 1: 5 accounts  — [FRAUD-0001, FRAUD-0002, FRAUD-0003, FRAUD-0004, FRAUD-0005]
+  Ring 2: 8 accounts  — [FRAUD-0006 … FRAUD-0013]
+  Ring 3: 12 accounts — [FRAUD-0014 … FRAUD-0025]
+```
+
+`FLAGGED_BY` produced 100 edges — computed automatically from shared identifiers during load, requiring zero manual labeling.
+
+### Query 01 — Basic Traversal
+
+Every shared-phone pair returned has `fraud_confirmed = TRUE` on both sides. No legitimate account appears. The planted rings are self-contained: ring members share phones exclusively with other ring members.
+
+### Query 02 — Shared Identifiers
+
+All three identifier types (phone, email, device) surface the same 25 fraud accounts in distinct clusters. Ring 3 (12 accounts) produces the densest overlap — each member shares multiple identifiers with every other member, generating combinatorially more rows than Rings 1 and 2. No cross-ring connections appear, confirming the rings are structurally isolated from each other.
+
+### Query 03 — Ring Detection
+
+Fraud accounts each connect to 8 shared identifier nodes on average (Phone and Email each contributing 8 connections per account in Ring 3). The visual pattern in the Neo4j browser shows three discrete star-shaped clusters where identifier nodes sit at the center with multiple account edges pointing to them — a Phone or Email node with 5+ inbound `HAS_PHONE`/`HAS_EMAIL` edges is a direct visual fraud signal.
+
+### Query 04 — Velocity Checks
+
+All 20 accounts with more than 5 transactions are `fraud_confirmed = TRUE`. The top velocities:
+
+| Account | Ring | Transactions |
+|---|---|---|
+| Modesto Dicki DVM | Ring 3 (12) | 15 |
+| Elenore Boehm | Ring 3 (12) | 14 |
+| Alejandro Pfannerstill | Ring 2 (8) | 13 |
+| Miss Brendan Fahey | Ring 3 (12) | 12 |
+| Wallace Morar | Ring 3 (12) | 12 |
+
+Ring 3 dominates the top of the velocity list. No legitimate account exceeded the threshold of 5 transactions in this dataset, making transaction velocity a clean discriminator here.
+
+### Query 05 — Risk Scoring
+
+The composite score `(fraud_neighbors × 10) + (shared_id_count × 3) + (tx_count × 1)` stratifies all three rings perfectly by membership size:
+
+| Ring | Size | Score range | fraud_neighbors |
+|---|---|---|---|
+| Ring 3 | 12 | 151 – 168 | 12 |
+| Ring 2 | 8 | 106 – 114 | 8 |
+| Ring 1 | 5 | 69 – 73 | 5 |
+
+All 25 fraud accounts surface in the top 25 results. No legitimate account appears. The `fraud_neighbors` signal (ring proximity weighted at ×10) dominates the score — a direct consequence of the graph traversal finding all confirmed fraud nodes reachable within 6 hops.
+
+### Key Takeaway
+
+The graph model makes fraud rings structurally visible without any ML model. Shared identifier nodes with multiple inbound account edges are the fraud signal. Multi-hop traversal to confirmed fraud nodes assigns proximity scores. Both are single Cypher statements — no recursive joins, no self-referential SQL, no exponential blowup with ring depth.
 
 ---
 
