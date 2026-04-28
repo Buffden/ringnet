@@ -71,23 +71,27 @@ public class GenerateData {
             String id,
             String createdAt) {
 
-        double phoneProb   = Double.parseDouble(CONFIG.getProperty("legit.phone.probability"));
-        double emailProb   = Double.parseDouble(CONFIG.getProperty("legit.email.probability"));
-        double deviceProb  = Double.parseDouble(CONFIG.getProperty("legit.device.probability"));
+        double phoneProb = Double.parseDouble(CONFIG.getProperty("legit.phone.probability"));
+        double emailProb = Double.parseDouble(CONFIG.getProperty("legit.email.probability"));
+        double deviceProb = Double.parseDouble(CONFIG.getProperty("legit.device.probability"));
         double addressProb = Double.parseDouble(CONFIG.getProperty("legit.address.probability"));
 
-        if (RNG.nextDouble() < phoneProb)
+        if (RNG.nextDouble() < phoneProb) {
             phones.add(new Phone(id, FAKER.phoneNumber().cellPhone(), createdAt));
-        if (RNG.nextDouble() < emailProb)
+        }
+        if (RNG.nextDouble() < emailProb) {
             emails.add(new Email(id, FAKER.internet().emailAddress(), createdAt));
-        if (RNG.nextDouble() < deviceProb)
+        }
+        if (RNG.nextDouble() < deviceProb) {
             devices.add(new Device(id, randomDeviceId(), randomDeviceType(), randomTs(2022, 2024)));
-        if (RNG.nextDouble() < addressProb)
+        }
+        if (RNG.nextDouble() < addressProb) {
             addresses.add(new Address(id,
                     FAKER.address().streetAddress(),
                     FAKER.address().city(),
                     FAKER.address().zipCode(),
                     randomAddressType()));
+        }
     }
 
     // --- Transaction generation ---
@@ -111,7 +115,9 @@ public class GenerateData {
         for (int t = 0; t < count; t++) {
             String from = pick(legitIds);
             String to;
-            do { to = pick(legitIds); } while (to.equals(from));
+            do {
+                to = pick(legitIds);
+            } while (to.equals(from));
             String status = RNG.nextDouble() < failProb ? "failed" : "completed";
             transactions.add(tx(++txId[0], from, to, amtMin, amtMax, status));
         }
@@ -126,7 +132,9 @@ public class GenerateData {
             for (int t = 0; t < ring.size() * multiplier; t++) {
                 String from = pick(ring);
                 String to;
-                do { to = pick(ring); } while (to.equals(from));
+                do {
+                    to = pick(ring);
+                } while (to.equals(from));
                 transactions.add(tx(++txId[0], from, to, amtMin, amtMax, "completed"));
             }
         }
@@ -137,9 +145,11 @@ public class GenerateData {
         double amtMin = Double.parseDouble(CONFIG.getProperty("tx.ring.to.legit.amount.min"));
         double amtMax = Double.parseDouble(CONFIG.getProperty("tx.ring.to.legit.amount.max"));
 
-        for (List<String> ring : rings)
-            for (int t = 0; t < ring.size() * multiplier; t++)
+        for (List<String> ring : rings) {
+            for (int t = 0; t < ring.size() * multiplier; t++) {
                 transactions.add(tx(++txId[0], pick(ring), pick(legitIds), amtMin, amtMax, "completed"));
+            }
+        }
     }
 
     static void addLegitToRingTransactions(List<Transaction> transactions, List<List<String>> rings, List<String> legitIds, int[] txId) {
@@ -147,9 +157,11 @@ public class GenerateData {
         double amtMin = Double.parseDouble(CONFIG.getProperty("tx.legit.to.ring.amount.min"));
         double amtMax = Double.parseDouble(CONFIG.getProperty("tx.legit.to.ring.amount.max"));
 
-        for (List<String> ring : rings)
-            for (int t = 0; t < ring.size() * multiplier; t++)
+        for (List<String> ring : rings) {
+            for (int t = 0; t < ring.size() * multiplier; t++) {
                 transactions.add(tx(++txId[0], pick(legitIds), pick(ring), amtMin, amtMax, "completed"));
+            }
+        }
     }
 
     // --- CSV writing ---
@@ -202,9 +214,12 @@ public class GenerateData {
     static String csv(String... values) {
         return Arrays.stream(values)
                 .map(v -> {
-                    if (v == null) return "";
-                    if (v.contains(",") || v.contains("\"") || v.contains("\n"))
+                    if (v == null) {
+                        return "";
+                    }
+                    if (v.contains(",") || v.contains("\"") || v.contains("\n")) {
                         return "\"" + v.replace("\"", "\"\"") + "\"";
+                    }
                     return v;
                 })
                 .collect(Collectors.joining(","));
@@ -264,12 +279,12 @@ public class GenerateData {
             List<String> ringIds,
             int ringIdx) {
 
-        int numPhones  = Integer.parseInt(CONFIG.getProperty("ring.shared.phones.base")) + ringIdx;
-        int numEmails  = Integer.parseInt(CONFIG.getProperty("ring.shared.emails.base")) + ringIdx;
+        int numPhones = Integer.parseInt(CONFIG.getProperty("ring.shared.phones.base")) + ringIdx;
+        int numEmails = Integer.parseInt(CONFIG.getProperty("ring.shared.emails.base")) + ringIdx;
         int numDevices = Integer.parseInt(CONFIG.getProperty("ring.shared.devices.base")) + ringIdx;
 
-        List<String> phonePool  = generatePhonePool(numPhones);
-        List<String> emailPool  = generateEmailPool(numEmails);
+        List<String> phonePool = generatePhonePool(numPhones);
+        List<String> emailPool = generateEmailPool(numEmails);
         List<String[]> devicePool = generateDevicePool(numDevices, ringIdx);
 
         for (String memberId : ringIds) {
@@ -288,20 +303,25 @@ public class GenerateData {
 
     static List<String> generatePhonePool(int count) {
         List<String> pool = new ArrayList<>();
-        for (int i = 0; i < count; i++) pool.add(FAKER.phoneNumber().cellPhone());
+        for (int i = 0; i < count; i++) {
+            pool.add(FAKER.phoneNumber().cellPhone());
+        }
         return pool;
     }
 
     static List<String> generateEmailPool(int count) {
         List<String> pool = new ArrayList<>();
-        for (int i = 0; i < count; i++) pool.add(FAKER.internet().emailAddress());
+        for (int i = 0; i < count; i++) {
+            pool.add(FAKER.internet().emailAddress());
+        }
         return pool;
     }
 
     static List<String[]> generateDevicePool(int count, int ringIdx) {
         List<String[]> pool = new ArrayList<>();
-        for (int d = 0; d < count; d++)
+        for (int d = 0; d < count; d++) {
             pool.add(new String[]{String.format("DEV-RING%d-%02d", ringIdx + 1, d + 1), randomDeviceType()});
+        }
         return pool;
     }
 

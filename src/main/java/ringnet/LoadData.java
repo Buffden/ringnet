@@ -7,12 +7,12 @@ public class LoadData {
 
     public static void main(String[] args) {
         Dotenv dotenv = Dotenv.load();
-        String uri      = dotenv.get("NEO4J_URI",  "bolt://localhost:7687");
-        String user     = dotenv.get("NEO4J_USER", "neo4j");
+        String uri = dotenv.get("NEO4J_URI", "bolt://localhost:7687");
+        String user = dotenv.get("NEO4J_USER", "neo4j");
         String password = dotenv.get("NEO4J_PASSWORD");
 
         try (Driver driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
-            Session session = driver.session()) {
+                Session session = driver.session()) {
 
             step("Creating constraints and indexes", () -> {
                 session.run("CREATE CONSTRAINT account_id IF NOT EXISTS FOR (a:Account) REQUIRE a.id IS UNIQUE");
@@ -23,16 +23,16 @@ public class LoadData {
             });
 
             step("Loading accounts", () ->
-                session.run("""
+                    session.run("""
                     LOAD CSV WITH HEADERS FROM 'file:///accounts.csv' AS row
                     MERGE (a:Account {id: row.id})
-                    SET a.name           = row.name,
-                        a.created_at     = row.created_at,
+                    SET a.name = row.name,
+                        a.created_at = row.created_at,
                         a.fraud_confirmed = (row.fraud_confirmed = 'true')
                     """).consume());
 
             step("Loading phones → HAS_PHONE", () ->
-                session.run("""
+                    session.run("""
                     LOAD CSV WITH HEADERS FROM 'file:///phones.csv' AS row
                     MATCH (a:Account {id: row.account_id})
                     MERGE (p:Phone {number: row.number})
@@ -41,7 +41,7 @@ public class LoadData {
                     """).consume());
 
             step("Loading emails → HAS_EMAIL", () ->
-                session.run("""
+                    session.run("""
                     LOAD CSV WITH HEADERS FROM 'file:///emails.csv' AS row
                     MATCH (a:Account {id: row.account_id})
                     MERGE (e:Email {address: row.address})
@@ -50,7 +50,7 @@ public class LoadData {
                     """).consume());
 
             step("Loading devices → HAS_DEVICE", () ->
-                session.run("""
+                    session.run("""
                     LOAD CSV WITH HEADERS FROM 'file:///devices.csv' AS row
                     MATCH (a:Account {id: row.account_id})
                     MERGE (d:Device {device_id: row.device_id})
@@ -60,45 +60,45 @@ public class LoadData {
                     """).consume());
 
             step("Loading addresses → HAS_ADDRESS", () ->
-                session.run("""
+                    session.run("""
                     LOAD CSV WITH HEADERS FROM 'file:///addresses.csv' AS row
                     MATCH (a:Account {id: row.account_id})
                     CREATE (addr:Address {
                         street: row.street,
-                        city:   row.city,
-                        zip:    row.zip,
-                        type:   row.type
+                        city: row.city,
+                        zip: row.zip,
+                        type: row.type
                     })
                     CREATE (a)-[:HAS_ADDRESS]->(addr)
                     """).consume());
 
             step("Loading transactions", () ->
-                session.run("""
+                    session.run("""
                     LOAD CSV WITH HEADERS FROM 'file:///transactions.csv' AS row
                     MATCH (from:Account {id: row.from_account_id})
-                    MATCH (to:Account   {id: row.to_account_id})
+                    MATCH (to:Account {id: row.to_account_id})
                     MERGE (t:Transaction {id: row.id})
-                    SET t.amount    = toFloat(row.amount),
+                    SET t.amount = toFloat(row.amount),
                         t.timestamp = row.timestamp,
-                        t.status    = row.status
+                        t.status = row.status
                     MERGE (from)-[:SENT]->(t)
                     MERGE (t)-[:TO]->(to)
                     MERGE (from)-[r:TRANSFERRED_TO]->(to)
-                    SET r.amount         = toFloat(row.amount),
-                        r.timestamp      = row.timestamp,
+                    SET r.amount = toFloat(row.amount),
+                        r.timestamp = row.timestamp,
                         r.transaction_id = row.id
                     """).consume());
 
             step("Computing FLAGGED_BY from shared identifiers", () ->
-                session.run("""
+                    session.run("""
                     MATCH (a:Account)-[:HAS_PHONE|HAS_EMAIL|HAS_DEVICE]->(shared) <-[:HAS_PHONE|HAS_EMAIL|HAS_DEVICE]-(b:Account)
                     WHERE a.id < b.id
                     WITH a, b, count(DISTINCT shared) AS shared_count
                     MERGE (a)-[r:FLAGGED_BY]->(b)
-                    SET r.rule       = 'shared_identifier',
+                    SET r.rule = 'shared_identifier',
                         r.confidence = CASE
                             WHEN shared_count >= 3 THEN 0.9
-                            WHEN shared_count = 2  THEN 0.6
+                            WHEN shared_count = 2 THEN 0.6
                             ELSE 0.3
                         END
                     """).consume());
