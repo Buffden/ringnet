@@ -16,3 +16,6 @@ data/raw/*.csv
 
 # OS
 .DS_Store
+
+# insights
+insights/
