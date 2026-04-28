@@ -9,12 +9,12 @@ public class VerifyLoad {
 
     public static void main(String[] args) {
         Dotenv dotenv = Dotenv.load();
-        String uri      = dotenv.get("NEO4J_URI",  "bolt://localhost:7687");
-        String user     = dotenv.get("NEO4J_USER", "neo4j");
+        String uri = dotenv.get("NEO4J_URI", "bolt://localhost:7687");
+        String user = dotenv.get("NEO4J_USER", "neo4j");
         String password = dotenv.get("NEO4J_PASSWORD");
 
         try (Driver driver = GraphDatabase.driver(uri, AuthTokens.basic(user, password));
-        Session session = driver.session()) {
+                Session session = driver.session()) {
 
             printNodeCounts(session);
             printRelationshipCounts(session);
@@ -52,7 +52,9 @@ public class VerifyLoad {
         List<List<String>> rings = new ArrayList<>();
 
         for (String seed : fraudAccounts) {
-            if (visited.contains(seed)) continue;
+            if (visited.contains(seed)) {
+                continue;
+            }
 
             List<String> component = new ArrayList<>();
             Queue<String> queue = new LinkedList<>();
